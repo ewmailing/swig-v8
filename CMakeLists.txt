@@ -154,6 +154,7 @@ add_library(modules "${SWIG_SOURCE_DIR}/Modules/allegrocl.cxx"
                     "${SWIG_SOURCE_DIR}/Modules/uffi.cxx"
                     "${SWIG_SOURCE_DIR}/Modules/utils.cxx"
                     "${SWIG_SOURCE_DIR}/Modules/xml.cxx"
+                    "${SWIG_SOURCE_DIR}/Modules/analyzer.cxx"
                     "${PROJECT_BINARY_DIR}/Source/Include/swigconfig.h"
                     "${SWIG_SOURCE_DIR}/Include/swigwarn.h"
 )
