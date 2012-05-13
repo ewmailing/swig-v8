@@ -171,3 +171,5 @@ get_property(SWIG_EXECUTABLE TARGET swig PROPERTY LOCATION)
 add_custom_command(TARGET swig POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy ${SWIG_EXECUTABLE} ${PROJECT_BINARY_DIR}/Dist
 )
+
+add_subdirectory(Examples/analyzer)
