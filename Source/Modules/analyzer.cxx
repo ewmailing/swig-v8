@@ -3,12 +3,26 @@
 #include <ctype.h>
 #include <string>
 
+#define DISABLED 1
+#define ENTER 2
+#define EXIT  4
+#define BEFORE 8
+#define AFTER  16
+
+#define ALL (ENTER | EXIT | BEFORE | AFTER)
+#define DEFAULT (ENTER | EXIT)
+
+#define NONE 0
+
+#define NFLAGS 20
+
 class ANALYZER : public Language {
 
 public:
-    ANALYZER() { _none(); }
+    ANALYZER() { _default(); }
     ~ANALYZER() {}
 
+    
     /* Function handlers */
 
     virtual int functionHandler(Node *n);
@@ -47,80 +61,81 @@ public:
     virtual void main(int argc, char *argv[]);
     virtual int top(Node *n);
 
+    static enum Flags {
+        _constantWrapper = 0,
+        _variableWrapper,
+        _nativeWrapper,
+        _functionWrapper,
+        _functionHandler,
+        _globalfunctionHandler,
+        _memberfunctionHandler,
+        _staticmemberfunctionHandler,
+        _destructorHandler,
+        _copyconstructorHandler,
+        _classHandler,
+        _variableHandler,
+        _globalvariableHandler,
+        _membervariableHandler,
+        _staticmembervariableHandler,
+        _memberconstantHandler,
+        _constructorHandler,
+        _callbackfunctionHandler,
+        _top        
+    } Flags;
+
 private:
-
+    
+    unsigned int flags[NFLAGS];
+    
     void _all() {
-        _enter=1;
-        _exit=1;
-        _node=1;
-        _before=1;
-        _after=1;
-
-        _functionHandler=1;
-        _globalfunctionHandler=1;
-        _memberfunctionHandler=1;
-        _staticmemberfunctionHandler=1;
-        _destructorHandler=1;
-        _copyconstructorHandler=1;
-        _classHandler=1;
+        for(unsigned int i=0; i<NFLAGS; ++i) {
+            flags[i] = ALL;
+        }
     }
 
     void _none() {
-        _enter=0;
-        _exit=0;
-        _node=0;
-        _before=0;
-        _after=0;
-
-        _functionHandler=0;
-        _globalfunctionHandler=0;
-        _memberfunctionHandler=0;
-        _staticmemberfunctionHandler=0;
-        _destructorHandler=0;
-        _copyconstructorHandler=0;
-        _classHandler=0;
+        for(unsigned int i=0; i<NFLAGS; ++i) {
+            flags[i] = NONE;
+        }
     }
 
-private:
-    bool _enter;
-    bool _exit;
-    bool _node;
-
-    bool _before;
-    bool _after;
-
-    bool _functionHandler;
-    bool _globalfunctionHandler;
-    bool _memberfunctionHandler;
-    bool _staticmemberfunctionHandler;
-    bool _destructorHandler;
-    bool _copyconstructorHandler;
-    bool _classHandler;
+    void _default() {
+        for(unsigned int i=0; i<NFLAGS; ++i) {
+            flags[i] = DEFAULT;
+        }
+    }
 
 };
 
 #define QSTR(s) STR(s)
 #define STR(s) #s
 
-#define ENTER_MSG "enter %s() of %s.\n"
-#define EXIT_MSG "exit %s().of %s\n"
+#define ENTER_MSG "enter %s() of %s\n"
+#define EXIT_MSG "exit %s() of %s\n"
 
-#define PRINT_ENTER_MSG(f)     if(_enter) { \
+#define PRINT_ENTER_MSG(f)     if(flags[_##f]&ENTER) { \
         Printf(stdout, ENTER_MSG, STR(f), Getattr(n, "name"));\
 }
 
-#define PRINT_NODE_BEFORE() if(_before && _node) { \
+#define PRINT_NODE_BEFORE(f) if(flags[_##f]&BEFORE) { \
         Swig_print_node(n);\
 }
 
-#define PRINT_NODE_AFTER() if(_after && _node) { \
+#define PRINT_NODE_AFTER(f) if(flags[_##f]&AFTER) { \
         Swig_print_node(n);\
 }
 
-#define PRINT_EXIT_MSG(f) if(_exit) { \
+#define PRINT_EXIT_MSG(f) if(flags[_##f]&EXIT) { \
         Printf(stdout, EXIT_MSG, STR(f), Getattr(n, "name"));\
 }
 
+#define PRINT_MESSAGES(f, call) { \
+    PRINT_ENTER_MSG(f);\
+    PRINT_NODE_BEFORE(f);\
+    call;\
+    PRINT_NODE_AFTER(f);\
+    PRINT_EXIT_MSG(f);\
+}
 
 /* ---------------------------------------------------------------------
  * constantWrapper()
@@ -128,7 +143,9 @@ private:
  * Low level code generator for constants 
  * --------------------------------------------------------------------- */
 int ANALYZER::constantWrapper(Node *n) {
-    Language::constantWrapper(n);
+    PRINT_MESSAGES(constantWrapper, 
+    Language::constantWrapper(n)
+    );
     return SWIG_OK;
 }
 
@@ -139,7 +156,9 @@ int ANALYZER::constantWrapper(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::variableWrapper(Node *n) {
-    Language::variableWrapper(n);
+    PRINT_MESSAGES(variableWrapper, 
+    Language::variableWrapper(n)
+    );
     return SWIG_OK;
 }
 
@@ -148,7 +167,9 @@ int ANALYZER::variableWrapper(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::nativeWrapper(Node *n) {
-    Language::nativeWrapper(n);
+    PRINT_MESSAGES(nativeWrapper, 
+    Language::nativeWrapper(n)
+    );
     return SWIG_OK;
 }
 
@@ -160,7 +181,9 @@ int ANALYZER::nativeWrapper(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::functionWrapper(Node *n) {
-    Language::functionWrapper(n);
+    PRINT_MESSAGES(functionWrapper, 
+    Language::functionWrapper(n)
+    );
     return SWIG_OK;
 }
 
@@ -172,11 +195,9 @@ int ANALYZER::functionWrapper(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::functionHandler(Node *n) {
-    PRINT_ENTER_MSG("functionHandler");
-    PRINT_NODE_BEFORE();
-    Language::functionHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("functionHandler");
+    PRINT_MESSAGES(functionHandler, 
+    Language::functionHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -187,11 +208,9 @@ int ANALYZER::functionHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::globalfunctionHandler(Node *n) {
-    PRINT_ENTER_MSG("globalfunctionHandler");
-    PRINT_NODE_BEFORE();
-    Language::globalfunctionHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("globalfunctionHandler");
+    PRINT_MESSAGES(globalfunctionHandler, 
+    Language::globalfunctionHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -202,11 +221,9 @@ int ANALYZER::globalfunctionHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::memberfunctionHandler(Node *n) {
-    PRINT_ENTER_MSG("memberfunctionHandler");
-    PRINT_NODE_BEFORE();
-    Language::memberfunctionHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("memberfunctionHandler");
+    PRINT_MESSAGES(memberfunctionHandler, 
+    Language::memberfunctionHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -217,12 +234,9 @@ int ANALYZER::memberfunctionHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::staticmemberfunctionHandler(Node *n) {
-    PRINT_ENTER_MSG("staticmemberfunctionHandler");
-    PRINT_NODE_BEFORE();
-    Language::staticmemberfunctionHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("staticmemberfunctionHandler");
-
+    PRINT_MESSAGES(staticmemberfunctionHandler, 
+    Language::staticmemberfunctionHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -233,12 +247,9 @@ int ANALYZER::staticmemberfunctionHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::callbackfunctionHandler(Node *n) {
-    PRINT_ENTER_MSG("callbackfunctionHandler");
-    PRINT_NODE_BEFORE();
-    Language::callbackfunctionHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("callbackfunctionHandler");
-
+    PRINT_MESSAGES(callbackfunctionHandler, 
+    Language::callbackfunctionHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -249,12 +260,9 @@ int ANALYZER::callbackfunctionHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::variableHandler(Node *n) {
-    PRINT_ENTER_MSG("variableHandler");
-    PRINT_NODE_BEFORE();
-    Language::variableHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("variableHandler");
-
+    PRINT_MESSAGES(variableHandler, 
+    Language::variableHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -265,11 +273,9 @@ int ANALYZER::variableHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::globalvariableHandler(Node *n) {
-    PRINT_ENTER_MSG("globalvariableHandler");
-    PRINT_NODE_BEFORE();
-    Language::globalvariableHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("globalvariableHandler");
+    PRINT_MESSAGES(globalvariableHandler, 
+    Language::globalvariableHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -280,12 +286,9 @@ int ANALYZER::globalvariableHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::membervariableHandler(Node *n) {
-    PRINT_ENTER_MSG("membervariableHandler");
-    PRINT_NODE_BEFORE();
-    Language::membervariableHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("membervariableHandler");
-
+    PRINT_MESSAGES(membervariableHandler, 
+    Language::membervariableHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -296,11 +299,9 @@ int ANALYZER::membervariableHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::staticmembervariableHandler(Node *n) {
-    PRINT_ENTER_MSG("staticmembervariableHandler");
-    PRINT_NODE_BEFORE();
-    Language::staticmembervariableHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("staticmembervariableHandler");
+    PRINT_MESSAGES(staticmembervariableHandler, 
+    Language::staticmembervariableHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -311,11 +312,9 @@ int ANALYZER::staticmembervariableHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::memberconstantHandler(Node *n) {
-    PRINT_ENTER_MSG("memberconstantHandler");
-    PRINT_NODE_BEFORE();
-    Language::memberconstantHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("memberconstantHandler");
+    PRINT_MESSAGES(memberconstantHandler, 
+    Language::memberconstantHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -326,11 +325,9 @@ int ANALYZER::memberconstantHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::constructorHandler(Node *n) {    
-    PRINT_ENTER_MSG("constructorHandler");
-    PRINT_NODE_BEFORE();
-    Language::constructorHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("constructorHandler");
+    PRINT_MESSAGES(constructorHandler, 
+    Language::constructorHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -341,12 +338,9 @@ int ANALYZER::constructorHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::copyconstructorHandler(Node *n) {
-    PRINT_ENTER_MSG("copyconstructorHandler");
-    PRINT_NODE_BEFORE();
-    Language::copyconstructorHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("copyconstructorHandler");
-
+    PRINT_MESSAGES(copyconstructorHandler, 
+    Language::copyconstructorHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -357,11 +351,9 @@ int ANALYZER::copyconstructorHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::destructorHandler(Node *n) {
-    PRINT_ENTER_MSG("destructorHandler");
-    PRINT_NODE_BEFORE();
-    Language::destructorHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("destructorHandler");
+    PRINT_MESSAGES(destructorHandler, 
+    Language::destructorHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -372,11 +364,9 @@ int ANALYZER::destructorHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::classHandler(Node *n) {
-    PRINT_ENTER_MSG("classHandler");
-    PRINT_NODE_BEFORE();
-    Language::classHandler(n);
-    PRINT_NODE_AFTER();
-    PRINT_EXIT_MSG("classHandler");
+    PRINT_MESSAGES(classHandler, 
+    Language::classHandler(n)
+    );
     return SWIG_OK;
 }
 
@@ -388,7 +378,9 @@ int ANALYZER::classHandler(Node *n) {
  * --------------------------------------------------------------------- */
 
 int ANALYZER::top(Node *n) {
-    Language::top(n);
+    PRINT_MESSAGES(top, 
+    Language::top(n)
+    );
     return SWIG_OK;
 }
 
@@ -400,35 +392,85 @@ int ANALYZER::top(Node *n) {
 
 void ANALYZER::main(int argc, char *argv[]) {
 
+    unsigned int current_flag = _top;
+    
     for (int i = 1; i < argc; i++) {
         if (argv[i]) {
-            if (strcmp(argv[i], "-all") == 0) {
+            if (strcmp(argv[i], "all") == 0) {
                 Swig_mark_arg(i);
                 _all();
-            } else if (strcmp(argv[i], "-enter") == 0) {
+            } else if (strcmp(argv[i], "none") == 0) {
                 Swig_mark_arg(i);
-                _enter=1;
-            } else if (strcmp(argv[i], "-exit") == 0) {
+                _none();
+            } else if (strcmp(argv[i], "constantWrapper") == 0) {
                 Swig_mark_arg(i);
-                _exit=1;
+                current_flag = _constantWrapper;
+            } else if (strcmp(argv[i], "variableWrapper") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _variableWrapper;
+            } else if (strcmp(argv[i], "nativeWrapper") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _nativeWrapper;
+            } else if (strcmp(argv[i], "functionWrapper") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _functionWrapper;
+            } else if (strcmp(argv[i], "functionHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _functionHandler;
+            } else if (strcmp(argv[i], "globalfunctionHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _globalfunctionHandler;
+            } else if (strcmp(argv[i], "memberfunctionHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _memberfunctionHandler;
+            } else if (strcmp(argv[i], "staticmemberfunctionHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _staticmemberfunctionHandler;
+            } else if (strcmp(argv[i], "destructorHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _destructorHandler;
+            } else if (strcmp(argv[i], "copyconstructorHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _copyconstructorHandler;
+            } else if (strcmp(argv[i], "classHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _classHandler;
+            } else if (strcmp(argv[i], "variableHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _variableHandler;
+            } else if (strcmp(argv[i], "globalvariableHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _globalvariableHandler;
+            } else if (strcmp(argv[i], "membervariableHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _membervariableHandler;
+            } else if (strcmp(argv[i], "staticmembervariableHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _staticmembervariableHandler;
+            } else if (strcmp(argv[i], "memberconstantHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _memberconstantHandler;
+            } else if (strcmp(argv[i], "constructorHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _constructorHandler;
+            } else if (strcmp(argv[i], "callbackfunctionHandler") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _callbackfunctionHandler;
+            } else if (strcmp(argv[i], "top") == 0) {
+                Swig_mark_arg(i);
+                current_flag = _top;
+            } else if (strcmp(argv[i], "+before") == 0) {
+                Swig_mark_arg(i);
+                flags[current_flag]|=BEFORE;
             } else if (strcmp(argv[i], "-before") == 0) {
                 Swig_mark_arg(i);
-                _before=1;
-            } else if (strcmp(argv[i], "-nobefore") == 0) {
+                flags[current_flag]= (flags[current_flag]^BEFORE)&flags[current_flag];
+            } else if (strcmp(argv[i], "+after") == 0) {
                 Swig_mark_arg(i);
-                _before=0;
+                flags[current_flag]|=AFTER;
             } else if (strcmp(argv[i], "-after") == 0) {
                 Swig_mark_arg(i);
-                _after=1;
-            } else if (strcmp(argv[i], "-noafter") == 0) {
-                Swig_mark_arg(i);
-                _after=0;
-            } else if (strcmp(argv[i], "-node") == 0) {
-                Swig_mark_arg(i);
-                _node=1;
-            } else if (strcmp(argv[i], "-nonode") == 0) {
-                Swig_mark_arg(i);
-                _node=0;
+                flags[current_flag]= (flags[current_flag]^AFTER)&flags[current_flag];
             }
         }
     }
