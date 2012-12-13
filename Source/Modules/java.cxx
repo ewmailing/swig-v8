@@ -415,6 +415,10 @@ public:
       Printf(f_directors_h, "#ifndef SWIG_%s_WRAP_H_\n", module_class_name);
       Printf(f_directors_h, "#define SWIG_%s_WRAP_H_\n\n", module_class_name);
 
+      // insert the core director declarations so that this header file
+      // can be used by other code
+      Swig_insert_file("director_h.swg", f_directors_h);
+
       Printf(f_directors, "\n\n");
       Printf(f_directors, "/* ---------------------------------------------------\n");
       Printf(f_directors, " * C++ director class methods\n");
@@ -460,6 +464,7 @@ public:
 
     if (directorsEnabled()) {
       // Insert director runtime into the f_runtime file (make it occur before %header section)
+      Swig_insert_file("director_h.swg", f_runtime);
       Swig_insert_file("director.swg", f_runtime);
     }
     // Generate the intermediary class
