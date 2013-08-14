@@ -168,6 +168,8 @@ JSObjectRef SWIG_JSC_NewPointerObj(JSContextRef context, void *ptr, swig_type_in
 
 #define SWIG_ConvertPtr(obj, ptr, info, flags)    SWIG_JSC_ConvertPtr(context, obj, ptr, info, flags)
 #define SWIG_NewPointerObj(ptr, info, flags)      SWIG_JSC_NewPointerObj(context, ptr, info, flags)
+#define SWIG_ConvertFunctionPtr(obj, ptr, info)    SWIG_JSC_ConvertPtr(context, obj, ptr, info, 0)
+#define SWIG_NewFunctionPtrObj(ptr, info)          SWIG_JSC_NewPointerObj(context, ptr, info, 0)
 
 #define SWIG_ConvertInstance(obj, pptr, type, flags)    SWIG_JSC_ConvertInstancePtr(context, obj, pptr, type, flags)
 #define SWIG_NewInstanceObj(thisvalue, type, flags)     SWIG_JSC_NewPointerObj(context, thisvalue, type, flags)
