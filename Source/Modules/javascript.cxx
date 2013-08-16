@@ -1646,6 +1646,8 @@ int JSCEmitter::exitVariable(Node *n) {
     if (GetFlag(state.function(), IS_STATIC)
         || Equal(Getattr(n, "nodeType"), "enumitem")) {
       Append(state.clazz(STATIC_VARIABLES), t_variable.str());
+      /* static member can be used from class member too */
+      Append(state.clazz(MEMBER_VARIABLES), t_variable.str());
     } else {
       Append(state.clazz(MEMBER_VARIABLES), t_variable.str());
     }
@@ -1705,6 +1707,7 @@ int JSCEmitter::exitClass(Node *n) {
       .replace(T_TYPE_MANGLED, state.clazz(TYPE_MANGLED))
       .replace(T_BASECLASS, base_name_mangled)
       .replace(T_CTOR, state.clazz(CTOR))
+      .replace(T_DTOR, state.clazz(DTOR))
       .pretty_print(state.global(INITIALIZER));
   Delete(base_name_mangled);
 
@@ -1878,6 +1881,8 @@ int V8Emitter::dump(Node *)
 {
  // write the swig banner
   Swig_banner(f_wrap_cpp);
+  String *v3_14_patch = NewString("#define V8_3_14\n");
+  Printv(f_wrap_cpp, v3_14_patch, "\n", 0);
 
   SwigType_emit_type_table(f_runtime, f_wrappers);
 
