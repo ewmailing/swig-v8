@@ -1646,6 +1646,8 @@ int JSCEmitter::exitVariable(Node *n) {
     if (GetFlag(state.function(), IS_STATIC)
         || Equal(Getattr(n, "nodeType"), "enumitem")) {
       Append(state.clazz(STATIC_VARIABLES), t_variable.str());
+      /* static member can be used from class member too */
+      Append(state.clazz(MEMBER_VARIABLES), t_variable.str());
     } else {
       Append(state.clazz(MEMBER_VARIABLES), t_variable.str());
     }
