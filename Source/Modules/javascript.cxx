@@ -1881,6 +1881,8 @@ int V8Emitter::dump(Node *)
 {
  // write the swig banner
   Swig_banner(f_wrap_cpp);
+  String *v3_14_patch = NewString("#define V8_3_14\n");
+  Printv(f_wrap_cpp, v3_14_patch, "\n", 0);
 
   SwigType_emit_type_table(f_runtime, f_wrappers);
 
