@@ -4,6 +4,7 @@
  * Enables extra debugging information in typemaps.
  */
 bool js_template_enable_debug = false;
+static String *api_version = 0;
 
 // keywords used for state variables
 #define NAME "name"
@@ -545,18 +546,43 @@ void JAVASCRIPT::main(int argc, char *argv[]) {
         Swig_mark_arg(i);
         createModuleObject = false;
       }
+	  // To handle v8 breaking their API all the time.
+	  // Example: Expecting user to pass: -api V8_3_14
+	  // which generates #define V8_3_14
+	  else if (strcmp(argv[i], "-api") == 0) {
+        if (argv[i + 1]) {
+          api_version = NewString(argv[i + 1]);
+          Swig_mark_arg(i);
+          Swig_mark_arg(i + 1);
+          i++;
+        } else {
+          Swig_arg_error();
+        }
+      }
     }
   }
 
   switch (mode) {
   case JSEmitter::V8:
     {
+      if(api_version) {
+	    if(!Equal(api_version, "V8_3_14")
+	      && !Equal(api_version, "BUILDING_NODE_EXTENSION")) {
+            Printf(stderr, "Invalid option for -api. Currently supported: V8_3_14 or BUILDING_NODE_EXTENSION\n");
+            SWIG_exit(-1);
+        }
+	  }
+
       emitter = swig_javascript_create_V8Emitter();
       Preprocessor_define("SWIG_JAVASCRIPT_V8 1", 0);
       break;
     }
   case JSEmitter::JavascriptCore:
     {
+      if(api_version) {
+        Printf(stderr, "-api <value> not supported for JavaScriptCore\n");
+        SWIG_exit(-1);
+	  }
       emitter = swig_javascript_create_JSCEmitter();
       Preprocessor_define("SWIG_JAVASCRIPT_JSC 1", 0);
       break;
@@ -1881,8 +1907,9 @@ int V8Emitter::dump(Node *)
 {
  // write the swig banner
   Swig_banner(f_wrap_cpp);
-  String *v3_14_patch = NewString("#define V8_3_14\n");
-  Printv(f_wrap_cpp, v3_14_patch, "\n", 0);
+  if(api_version) {
+    Printf(f_wrap_cpp, "#define %s\n\n", api_version);
+  }
 
   SwigType_emit_type_table(f_runtime, f_wrappers);
 
