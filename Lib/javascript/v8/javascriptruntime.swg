@@ -12,11 +12,13 @@
 %}
 %enddef
 
-#ifdef SWIG_V8_VERSION
-%swig_v8_define_version(SWIG_V8_VERSION)
+#ifdef USE_V8_VERSION
+%swig_v8_define_version(USE_V8_VERSION)
 #else
 // HACK: defining a default version
-%swig_v8_define_version(SWIG_V8_VERSION)
+// For the default we choose the v8 shipped with node.js v0.8.25 which Travis-CI uses currently.
+// From a look into node.js changelog this is version 3.11.10.
+%swig_v8_define_version(0x031110)
 #endif
 
 #ifdef BUILDING_NODE_EXTENSION
