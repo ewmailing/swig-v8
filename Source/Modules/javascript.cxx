@@ -2055,7 +2055,7 @@ int V8Emitter::exitVariable(Node* n)
     if(GetFlag(state.variable(), IS_STATIC) || Equal(Getattr(n, "nodeType"), "enumitem") ) {
       Template t_register = getTemplate("jsv8_register_static_variable");
       t_register.replace(T_PARENT, state.clazz(NAME_MANGLED))
-          .replace(T_NAME, state.variable(NAME))
+          .replace(T_NAME, Swig_name_mangle(state.variable(NAME)))
           .replace(T_GETTER, state.variable(GETTER))
           .replace(T_SETTER, state.variable(SETTER))
           .trim()
@@ -2063,7 +2063,7 @@ int V8Emitter::exitVariable(Node* n)
     } else {
       Template t_register = getTemplate("jsv8_register_member_variable");
       t_register.replace(T_NAME_MANGLED, state.clazz(NAME_MANGLED))
-          .replace(T_NAME, state.variable(NAME))
+          .replace(T_NAME, Swig_name_mangle(state.variable(NAME)))
           .replace(T_GETTER, state.variable(GETTER))
           .replace(T_SETTER, state.variable(SETTER))
           .trim()
@@ -2074,7 +2074,7 @@ int V8Emitter::exitVariable(Node* n)
     //       with the parent being a nspace object (instead of class object)
     Template t_register = getTemplate("jsv8_register_static_variable");
     t_register.replace(T_PARENT, Getattr(current_namespace, NAME))
-        .replace(T_NAME, state.variable(NAME))
+        .replace(T_NAME, Swig_name_mangle(state.variable(NAME)))
         .replace(T_GETTER, state.variable(GETTER))
         .replace(T_SETTER, state.variable(SETTER))
         .trim()
