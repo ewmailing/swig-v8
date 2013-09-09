@@ -179,13 +179,17 @@ SWIG_AsVal_dec(Type)(SWIG_Object obj, Type *val)
 {
   Base v;
   int res = SWIG_AsVal(Base)(obj, &v);
+/* Disabling overflow checking because it breaks with C99 INFINITY */
+/*
   if (SWIG_IsOK(res)) {
     if (OverflowCond) {
       return SWIG_OverflowError;
     } else {
       if (val) *val = %numeric_cast(v, Type);
     }
-  }  
+  }
+*/
+  if (val) *val = %numeric_cast(v, Type);
   return res;
 }
 }
