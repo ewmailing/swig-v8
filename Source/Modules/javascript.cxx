@@ -1993,15 +1993,14 @@ int V8Emitter::exitClass(Node *n)
   /* Note: this makes sure that there is a swig_type added for this class */
   String *clientData = NewString("");
   Printf(clientData, "&%s_clientData", state.clazz(NAME_MANGLED));
+
   SwigType_remember_clientdata(state.clazz(TYPE_MANGLED), clientData);
 
   // emit definition of v8 class template
-  String *p_classtype = state.clazz(TYPE);
-  String *p_classtype_str = SwigType_manglestr(p_classtype);
   Template t_def_class = getTemplate("jsv8_define_class_template");
   t_def_class.replace(T_NAME_MANGLED, state.clazz(NAME_MANGLED))
       .replace(T_NAME, state.clazz(NAME))
-      .replace(T_TYPE_MANGLED, p_classtype_str)
+      .replace(T_TYPE_MANGLED, state.clazz(TYPE_MANGLED))
       .replace(T_DTOR, state.clazz(DTOR))
       .trim()
       .pretty_print(f_init_class_templates);
