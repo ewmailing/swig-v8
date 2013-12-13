@@ -308,7 +308,7 @@ fail:
   $jsmangledname_clientData.class_templ.Reset(v8::Isolate::GetCurrent(), $jsmangledname_class);
 #endif
   $jsmangledname_clientData.dtor = $jsdtor;  
-  SWIGTYPE_$jsmangledtype->clientdata = &$jsmangledname_clientData;
+  SWIGTYPE$jsmangledtype->clientdata = &$jsmangledname_clientData;
 %}
 
 
